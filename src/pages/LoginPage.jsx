@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { z } from 'zod';
+
+// Zod სქემა შესვლის ფორმისთვის
+const loginSchema = z.object({
+  email: z.string().email('გთხოვთ შეიყვანოთ სწორი ელფოსტა'),
+  password: z.string().min(6, 'პაროლი უნდა შედგებოდეს მინიმუმ 6 სიმბოლოსგან'),
+});
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -18,6 +25,17 @@ export function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setBannerError('');
+
+    // Zod-ით მონაცემების ვალიდაცია სერვერზე გაგზავნამდე
+    const result = loginSchema.safeParse({ email, password });
+
+    if (!result.success) {
+      // თუ ვალიდაცია ვერ გაიარა, გამოგვაქვს პირველივე შეცდომის ტექსტი
+      const errorMessage = result.error.errors[0].message;
+      setBannerError(errorMessage);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -53,7 +71,6 @@ export function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             disabled={isLoading}
             style={{ width: '100%', padding: '10px', boxSizing: 'border-box' }}
-            required
           />
         </div>
 
@@ -65,7 +82,6 @@ export function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             disabled={isLoading}
             style={{ width: '100%', padding: '10px', boxSizing: 'border-box' }}
-            required
           />
         </div>
 

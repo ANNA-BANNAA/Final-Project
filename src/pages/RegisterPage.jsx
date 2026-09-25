@@ -1,6 +1,18 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { z } from 'zod';
+
+// Zod სქემა რეგისტრაციის ფორმისთვის
+const registerSchema = z.object({
+  name: z.string().min(2, 'სახელი უნდა შედგებოდეს მინიმუმ 2 სიმბოლოსგან'),
+  email: z.string().email('გთხოვთ შეიყვანოთ სწორი ელფოსტა'),
+  password: z.string().min(6, 'პაროლი უნდა შედგებოდეს მინიმუმ 6 სიმბოლოსგან'),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'პაროლები არ ემთხვევა ერთმანეთს',
+  path: ['confirmPassword'], // შეცდომა მიეკუთვნება confirmPassword ველს
+});
 
 export function RegisterPage() {
   const [name, setName] = useState('');
@@ -20,8 +32,17 @@ export function RegisterPage() {
     setErrors({});
     setGeneralError('');
 
-    if (password !== confirmPassword) {
-      setErrors({ confirmPassword: 'პაროლები არ ემთხვევა ერთმანეთს' });
+    // Zod-ით ვალიდაცია სერვერზე გაგზავნამდე
+    const result = registerSchema.safeParse({ name, email, password, confirmPassword });
+
+    if (!result.success) {
+      // ზოდის შეცდომების გადაყვანა ობიექტში, რომ თითოეულ ველს თავისი შეცდომა ჰქონდეს
+      const fieldErrors = {};
+      result.error.errors.forEach((err) => {
+        const fieldName = err.path[0];
+        fieldErrors[fieldName] = err.message;
+      });
+      setErrors(fieldErrors);
       return;
     }
 
@@ -60,9 +81,14 @@ export function RegisterPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             disabled={isLoading}
-            style={{ width: '100%', padding: '10px', boxSizing: 'border-box' }}
-            required
+            style={{ 
+              width: '100%', 
+              padding: '10px', 
+              boxSizing: 'border-box',
+              borderColor: errors.name ? 'red' : '#ccc' 
+            }}
           />
+          {errors.name && <span style={{ color: 'red', fontSize: '12px' }}>{errors.name}</span>}
         </div>
 
         <div>
@@ -78,7 +104,6 @@ export function RegisterPage() {
               boxSizing: 'border-box',
               borderColor: errors.email ? 'red' : '#ccc' 
             }}
-            required
           />
           {errors.email && <span style={{ color: 'red', fontSize: '12px' }}>{errors.email}</span>}
         </div>
@@ -86,7 +111,7 @@ export function RegisterPage() {
         <div>
           <input
             type="password"
-            placeholder="პაროლი (მინ. 8 სიმბოლო, 1 ასო, 1 ციფრი)"
+            placeholder="პაროლი (მინ. 6 სიმბოლო)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={isLoading}
@@ -96,7 +121,6 @@ export function RegisterPage() {
               boxSizing: 'border-box',
               borderColor: errors.password ? 'red' : '#ccc' 
             }}
-            required
           />
           {errors.password && <span style={{ color: 'red', fontSize: '12px' }}>{errors.password}</span>}
         </div>
@@ -114,7 +138,6 @@ export function RegisterPage() {
               boxSizing: 'border-box',
               borderColor: errors.confirmPassword ? 'red' : '#ccc' 
             }}
-            required
           />
           {errors.confirmPassword && <span style={{ color: 'red', fontSize: '12px' }}>{errors.confirmPassword}</span>}
         </div>

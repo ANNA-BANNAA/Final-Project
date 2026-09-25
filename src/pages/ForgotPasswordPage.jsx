@@ -1,6 +1,20 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '../api/authApi';
+import { z } from 'zod';
+
+// Zod სქემები თითოეული ნაბიჯისთვის
+const emailSchema = z.object({
+  email: z.string().email('გთხოვთ შეიყვანოთ სწორი ელფოსტა'),
+});
+
+const codeSchema = z.object({
+  code: z.string().length(6, 'კოდი უნდა შედგებოდეს ზუსტად 6 სიმბოლოსგან'),
+});
+
+const passwordSchema = z.object({
+  newPassword: z.string().min(6, 'პაროლი უნდა შედგებოდეს მინიმუმ 6 სიმბოლოსგან'),
+});
 
 export function ForgotPasswordPage() {
   const [step, setStep] = useState(1); // 1: ელფოსტა, 2: კოდი, 3: ახალი პაროლი
@@ -19,6 +33,14 @@ export function ForgotPasswordPage() {
   const handleSendEmail = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Zod ვალიდაცია მეილისთვის
+    const result = emailSchema.safeParse({ email });
+    if (!result.success) {
+      setError(result.error.errors[0].message);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -35,6 +57,14 @@ export function ForgotPasswordPage() {
   const handleVerifyCode = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Zod ვალიდაცია კოდისთვის
+    const result = codeSchema.safeParse({ code });
+    if (!result.success) {
+      setError(result.error.errors[0].message);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -52,6 +82,14 @@ export function ForgotPasswordPage() {
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Zod ვალიდაცია ახალი პაროლისთვის
+    const result = passwordSchema.safeParse({ newPassword });
+    if (!result.success) {
+      setError(result.error.errors[0].message);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -85,7 +123,6 @@ export function ForgotPasswordPage() {
             onChange={(e) => setEmail(e.target.value)}
             disabled={isLoading}
             style={{ width: '100%', padding: '10px', boxSizing: 'border-box' }}
-            required
           />
           <button 
             type="submit" 
@@ -108,7 +145,6 @@ export function ForgotPasswordPage() {
             onChange={(e) => setCode(e.target.value)}
             disabled={isLoading}
             style={{ width: '100%', padding: '10px', boxSizing: 'border-box' }}
-            required
           />
           <button 
             type="submit" 
@@ -125,12 +161,11 @@ export function ForgotPasswordPage() {
         <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           <input
             type="password"
-            placeholder="ახალი პაროლი (მინ. 8 სიმბოლო)"
+            placeholder="ახალი პაროლი (მინ. 6 სიმბოლო)"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             disabled={isLoading}
             style={{ width: '100%', padding: '10px', boxSizing: 'border-box' }}
-            required
           />
           <button 
             type="submit" 
